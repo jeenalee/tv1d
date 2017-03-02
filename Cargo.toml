@@ -1,0 +1,11 @@
+[package]
+name = "tv1d"
+version = "0.1.0"
+authors = ["jeenalee <ijeenalee@gmail.com>"]
+
+[dependencies]
+num = "0.1.37"
+clippy = {version = "*", optional = true}
+
+[features]
+default = []
