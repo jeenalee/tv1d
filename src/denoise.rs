@@ -10,6 +10,127 @@ use std::iter;
 use std::ops;
 use utils::*;
 
+// TODO change tautstring to be generic
+/// TODO
+/// Note: numerical blow-up if floattype=float for N>=10^6
+/// because the algorithm is based on the running sum of the signal
+/// values.
+// pub fn tautstring_denoise(input: &Vec<f64>, lambda: f64) -> Vec<f64> {
+//     assert!(input.len() > 0, "Input list should have at least one value.");
+//     let mut output = vec![0.0; input.len()];
+//     let width = input.len() + 1;
+
+//     let mut index_low = vec![0; width];
+//     let mut slope_low = vec![0.0; width];
+//     let mut index_up = vec![0; width];
+//     let mut slope_up = vec![0.0; width];
+//     let mut index = vec![0; width];
+
+//     let mut z = vec![0.0; width];
+//     // Lower and upper boundaries
+//     let mut y_low = vec![0.0; width];
+//     let mut y_up = vec![0.0; width];
+//     let mut s_low = 0;
+//     let mut c_low = 0;
+//     let mut s_up = 0;
+//     let mut c_up = 0;
+//     let mut c = 0;
+//     let mut i = 2;
+
+//     // The boundaries are first defined by the input values.
+//     y_low[1] = input[0] - lambda;
+//     y_up[1] = input[0] + lambda;
+//     // Based on the input values, get culmulative sums.
+//     while i < width {
+//         y_low[i] = y_low[i - 1] + input[i - 1];
+//         y_up[i] = y_up[i - 1] + input[i - 1];
+//         i += 1;
+//     }
+
+//     // The last value's lower boundary is elevated by lambda.
+//     y_low[width - 1] += lambda;
+//     // The last value's lower boundary is decreased by lambda.
+//     y_up[width - 1] -= lambda;
+
+//     slope_low[0] = f64::INFINITY;
+//     slope_up[0] = f64::NEG_INFINITY;
+
+//     // z is first set to be the first lower boundary.
+//     z[0] = y_low[0];
+
+//     for i in 1..width {
+//         c_low += 1;
+//         c_up += 1;
+
+//         index_low[c_low] = i;
+//         index_up[c_up] = i;
+//         slope_low[c_low] = y_low[i] - y_low[i - 1];
+
+//         // c_low is too large. Decrease it by one.
+//         while (c_low > s_low + 1) && (slope_low[cmp::max(s_low, c_low - 1)]
+// <= slope_low[c_low]) {
+//             c_low -= 1;
+//             index_low[c_low] = i;
+//             if c_low > s_low + 1 {
+//                 slope_low[c_low] = (y_low[i] - y_low[index_low[c_low - 1]]) /
+//                     (i as f64 - index_low[c_low - 1] as f64);
+//             } else {
+//                 slope_low[c_low] = (y_low[i] - z[c]) /
+//                     (i as f64 - index[c] as f64);
+//             }
+//         }
+
+//         slope_up[c_up] = y_up[i] - y_up[i - 1];
+//         while (c_up > s_up + 1) && (slope_up[cmp::max(c_up - 1, s_up)] >= slope_up[c_up]) {
+//             c_up -= 1;
+//             index_up[c_up] = i;
+//             if c_up > s_up+1 {
+//                 slope_up[c_up] = (y_up[i] - y_up[index_up[c_up - 1]]) /
+//                     (i as f64 - index_up[c_up - 1] as f64);
+//             } else {
+//                 slope_up[c_up] = (y_up[i] - z[c]) / (i as f64 - index[c] as f64);
+//             }
+//         }
+//         while (c_low == s_low + 1) &&
+//             (c_up > s_up+1) &&
+//             (slope_low[c_low] >= slope_up[s_up + 1]) {
+//                 c += 1;
+//                 s_up += 1;
+//                 index[c] = index_up[s_up];
+//                 z[c] = y_up[index[c]];
+//                 index_low[s_low] = index[c];
+//                 slope_low[c_low] = (y_low[i] - z[c]) / (i as f64 - index[c] as f64);
+//             }
+//         while (c_up == s_up + 1) &&
+//             (c_low > s_low + 1) &&
+//             (slope_up[c_up] <= slope_low[s_low + 1]) {
+//                 c += 1;
+//                 s_low += 1;
+//                 index[c] = index_low[s_low];
+//                 z[c] = y_low[index[c]];
+//                 index_up[s_up] = index[c];
+//                 slope_up[c_up] = (y_up[i] - z[c]) / (i as f64 - index[c] as f64);
+//             }
+//     }
+//     for i in 1..(c_low - s_low + 1) {
+//         index[c + i] = index_low[s_low + i];
+//         z[c + i]=y_low[index[c + i]];
+//     }
+//     c += c_low - s_low;
+//     let mut j = 0;
+//     let mut a;
+//     i = 1;
+
+//     while i <= c {
+//         a = (z[i] - z[i - 1]) / (index[i] as f64 - index[i - 1] as f64);
+//         while j < index[i] {
+//             output[j] = a;
+//             j += 1;
+//         }
+//         i += 1;
+//     }
+//     output
+// }
 /// Denoise an array of data points given a `lambda`, which decides
 /// the degree of denoising.
 ///
