@@ -5,7 +5,3 @@ authors = ["jeenalee <ijeenalee@gmail.com>"]
 
 [dependencies]
 num = "0.1.37"
-clippy = {version = "*", optional = true}
-
-[features]
-default = []

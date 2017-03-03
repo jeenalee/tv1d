@@ -1,5 +1,5 @@
-//! Total Variation 1D Denoising Algorithms.
-//!
+//! TODO
+//!Total Variation 1D Denoising Algorithms.
 
 #![deny(missing_docs)]
 
@@ -15,122 +15,138 @@ use utils::*;
 /// Note: numerical blow-up if floattype=float for N>=10^6
 /// because the algorithm is based on the running sum of the signal
 /// values.
-// pub fn tautstring_denoise(input: &Vec<f64>, lambda: f64) -> Vec<f64> {
-//     assert!(input.len() > 0, "Input list should have at least one value.");
-//     let mut output = vec![0.0; input.len()];
-//     let width = input.len() + 1;
+/// Input values must be floats, not integers.
+pub fn tautstring_denoise<T>(input: &[T], lambda: T) -> Vec<T>
+    where T: num::Num + num::FromPrimitive + cmp::PartialOrd
+    + ops::Neg + ops::Add<Output=T> + ops::Neg<Output=T>
+    + ops::AddAssign<T> + ops::SubAssign<T> + num::Float
+    + Sized + fmt::Debug + Copy + Clone + num::ToPrimitive
+{
+    assert!(input.len() > 0,
+            "Input list should have at least one value.");
+    let mut output = vec![num::zero(); input.len()];
+    let width = input.len() + 1;
 
-//     let mut index_low = vec![0; width];
-//     let mut slope_low = vec![0.0; width];
-//     let mut index_up = vec![0; width];
-//     let mut slope_up = vec![0.0; width];
-//     let mut index = vec![0; width];
+    let mut index = vec![num::zero(); width];
+    let mut index_low = vec![num::zero(); width];
+    let mut index_up = vec![num::zero(); width];
 
-//     let mut z = vec![0.0; width];
-//     // Lower and upper boundaries
-//     let mut y_low = vec![0.0; width];
-//     let mut y_up = vec![0.0; width];
-//     let mut s_low = 0;
-//     let mut c_low = 0;
-//     let mut s_up = 0;
-//     let mut c_up = 0;
-//     let mut c = 0;
-//     let mut i = 2;
+    let mut slope_low = vec![num::zero(); width];
+    let mut slope_up = vec![num::zero(); width];
 
-//     // The boundaries are first defined by the input values.
-//     y_low[1] = input[0] - lambda;
-//     y_up[1] = input[0] + lambda;
-//     // Based on the input values, get culmulative sums.
-//     while i < width {
-//         y_low[i] = y_low[i - 1] + input[i - 1];
-//         y_up[i] = y_up[i - 1] + input[i - 1];
-//         i += 1;
-//     }
+    let mut z = vec![num::zero(); width];
+    // Lower and upper boundaries
+    let mut y_low = vec![num::zero(); width];
+    let mut y_up = vec![num::zero(); width];
+    let mut s_low = num::zero();
+    let mut c_low = 0;
+    let mut s_up = 0;
+    let mut c_up = 0;
+    let mut c = 0;
+    let mut i = 2;
 
-//     // The last value's lower boundary is elevated by lambda.
-//     y_low[width - 1] += lambda;
-//     // The last value's lower boundary is decreased by lambda.
-//     y_up[width - 1] -= lambda;
+    // The boundaries are first defined by the input values.
+    y_low[1] = input[0] - lambda;
+    y_up[1] = input[0] + lambda;
+    // Based on the input values, get culmulative sums.
+    while i < width {
+        y_low[i] = y_low[i - 1] + input[i - 1];
+        y_up[i] = y_up[i - 1] + input[i - 1];
+        i += 1;
+    }
 
-//     slope_low[0] = f64::INFINITY;
-//     slope_up[0] = f64::NEG_INFINITY;
+    // The last value's lower boundary is elevated by lambda.
+    y_low[width - 1] += lambda;
+    // The last value's lower boundary is decreased by lambda.
+    y_up[width - 1] -= lambda;
 
-//     // z is first set to be the first lower boundary.
-//     z[0] = y_low[0];
+    slope_low[0] = num::Float::infinity();
+    slope_up[0] = num::Float::neg_infinity();
 
-//     for i in 1..width {
-//         c_low += 1;
-//         c_up += 1;
+    // `z` is first set to be the first lower boundary.
+    z[0] = y_low[0];
 
-//         index_low[c_low] = i;
-//         index_up[c_up] = i;
-//         slope_low[c_low] = y_low[i] - y_low[i - 1];
+    for i in 1..width {
+        c_low += 1;
+        c_up += 1;
 
-//         // c_low is too large. Decrease it by one.
-//         while (c_low > s_low + 1) && (slope_low[cmp::max(s_low, c_low - 1)]
-// <= slope_low[c_low]) {
-//             c_low -= 1;
-//             index_low[c_low] = i;
-//             if c_low > s_low + 1 {
-//                 slope_low[c_low] = (y_low[i] - y_low[index_low[c_low - 1]]) /
-//                     (i as f64 - index_low[c_low - 1] as f64);
-//             } else {
-//                 slope_low[c_low] = (y_low[i] - z[c]) /
-//                     (i as f64 - index[c] as f64);
-//             }
-//         }
+        index_low[c_low] = i;
+        index_up[c_up] = i;
+        slope_low[c_low] = y_low[i] - y_low[i - 1];
 
-//         slope_up[c_up] = y_up[i] - y_up[i - 1];
-//         while (c_up > s_up + 1) && (slope_up[cmp::max(c_up - 1, s_up)] >= slope_up[c_up]) {
-//             c_up -= 1;
-//             index_up[c_up] = i;
-//             if c_up > s_up+1 {
-//                 slope_up[c_up] = (y_up[i] - y_up[index_up[c_up - 1]]) /
-//                     (i as f64 - index_up[c_up - 1] as f64);
-//             } else {
-//                 slope_up[c_up] = (y_up[i] - z[c]) / (i as f64 - index[c] as f64);
-//             }
-//         }
-//         while (c_low == s_low + 1) &&
-//             (c_up > s_up+1) &&
-//             (slope_low[c_low] >= slope_up[s_up + 1]) {
-//                 c += 1;
-//                 s_up += 1;
-//                 index[c] = index_up[s_up];
-//                 z[c] = y_up[index[c]];
-//                 index_low[s_low] = index[c];
-//                 slope_low[c_low] = (y_low[i] - z[c]) / (i as f64 - index[c] as f64);
-//             }
-//         while (c_up == s_up + 1) &&
-//             (c_low > s_low + 1) &&
-//             (slope_up[c_up] <= slope_low[s_low + 1]) {
-//                 c += 1;
-//                 s_low += 1;
-//                 index[c] = index_low[s_low];
-//                 z[c] = y_low[index[c]];
-//                 index_up[s_up] = index[c];
-//                 slope_up[c_up] = (y_up[i] - z[c]) / (i as f64 - index[c] as f64);
-//             }
-//     }
-//     for i in 1..(c_low - s_low + 1) {
-//         index[c + i] = index_low[s_low + i];
-//         z[c + i]=y_low[index[c + i]];
-//     }
-//     c += c_low - s_low;
-//     let mut j = 0;
-//     let mut a;
-//     i = 1;
+        // `c_low` is too large. Decrease it by one.
+        while (c_low > s_low + 1) && (slope_low[cmp::max(s_low, c_low - 1)] <= slope_low[c_low]) {
+            c_low -= 1;
+            index_low[c_low] = i;
+            if c_low > s_low + 1 {
+                slope_low[c_low] = (y_low[i] - y_low[index_low[c_low - 1]]) /
+                                   num::FromPrimitive::from_usize(i - index_low[c_low - 1])
+                    .expect("Unable to convert usize to num::FromPrimitive.");
+            } else {
+                slope_low[c_low] = (y_low[i] - z[c]) /
+                                   num::FromPrimitive::from_usize(i - index[c])
+                    .expect("Unable to convert usize to num::FromPrimitive.");
+            }
+        }
 
-//     while i <= c {
-//         a = (z[i] - z[i - 1]) / (index[i] as f64 - index[i - 1] as f64);
-//         while j < index[i] {
-//             output[j] = a;
-//             j += 1;
-//         }
-//         i += 1;
-//     }
-//     output
-// }
+        slope_up[c_up] = y_up[i] - y_up[i - 1];
+        while (c_up > s_up + 1) && (slope_up[cmp::max(c_up - 1, s_up)] >= slope_up[c_up]) {
+            c_up -= 1;
+            index_up[c_up] = i;
+            if c_up > s_up + 1 {
+                slope_up[c_up] = (y_up[i] - y_up[index_up[c_up - 1]]) /
+                                 num::FromPrimitive::from_usize(i - index_up[c_up - 1])
+                    .expect("Unable to convert usize to num::FromPrimitive.");
+            } else {
+                slope_up[c_up] = (y_up[i] - z[c]) /
+                                 num::FromPrimitive::from_usize(i - index[c])
+                    .expect("Unable to convert usize to num::FromPrimitive.");
+            }
+        }
+        while (c_low == s_low + 1) && (c_up > s_up + 1) &&
+              (slope_low[c_low] >= slope_up[s_up + 1]) {
+            c += 1;
+            s_up += 1;
+            index[c] = index_up[s_up];
+            z[c] = y_up[index[c]];
+            index_low[s_low] = index[c];
+            slope_low[c_low] = (y_low[i] - z[c]) /
+                               num::FromPrimitive::from_usize(i - index[c])
+                .expect("Unable to convert usize to num::FromPrimitive.");;
+        }
+        while (c_up == s_up + 1) && (c_low > s_low + 1) &&
+              (slope_up[c_up] <= slope_low[s_low + 1]) {
+            c += 1;
+            s_low += 1;
+            index[c] = index_low[s_low];
+            z[c] = y_low[index[c]];
+            index_up[s_up] = index[c];
+            slope_up[c_up] = (y_up[i] - z[c]) /
+                             num::FromPrimitive::from_usize(i - index[c])
+                .expect("Unable to convert usize to num::FromPrimitive.");;
+        }
+    }
+    for i in 1..(c_low - s_low + 1) {
+        index[c + i] = index_low[s_low + i];
+        z[c + i] = y_low[index[c + i]];
+    }
+    c += c_low - s_low;
+    let mut output_index = 0;
+    let mut denoised_output;
+    i = 1;
+    while i <= c {
+        denoised_output = (z[i] - z[i - 1]) /
+                          num::FromPrimitive::from_usize(index[i] - index[i - 1])
+            .expect("Unable to convert usize to num::FromPrimitive.");;
+        while output_index < index[i] {
+            output[output_index] = denoised_output;
+            output_index += 1;
+        }
+        i += 1;
+    }
+    output
+}
+
 /// Denoise an array of data points given a `lambda`, which decides
 /// the degree of denoising.
 ///
@@ -141,7 +157,7 @@ use utils::*;
 ///
 /// This algorithm was first described by Laurent Condat in 2013 in
 /// his paper "A Direct Algorithm for 1D Total Variation Denoising."
-pub fn condat_denoise<T>(input: &Vec<T>, lambda: T) -> Vec<T>
+pub fn condat_denoise<T>(input: &[T], lambda: T) -> Vec<T>
     where T: num::Num + num::FromPrimitive + cmp::PartialOrd
     + ops::Neg + ops::Add<Output=T> + ops::Neg<Output=T>
     + ops::AddAssign<T> + Sized + fmt::Debug + Copy
@@ -150,17 +166,21 @@ pub fn condat_denoise<T>(input: &Vec<T>, lambda: T) -> Vec<T>
             "Input list should have at least one value.");
 
     let width = input.len();
-    let mut output = Vec::new();
+    let mut output = Vec::with_capacity(width);
 
-    // k: current sample location
-    let mut k = 0;
-    // k0: beginning of current segment
-    let mut k0 = 0;
+    // `current_input_index` is the location of the element the
+    // program is currently inspecting.
+    let mut current_input_index = 0;
+    // `segment_start` is the index for the beginning of current
+    // segment.
+    let mut segment_start = 0;
 
     let twolambda = T::from_u8(2).expect("Unable to transform `2` to T.") * lambda;
     let minlambda = -lambda;
-    // umin and umax are used for keeping track of previous data
-    // points we have seen.
+    // `umin` and `umax` are used for keeping track of previous data
+    // points we have seen, and will be used to decide whether
+    // `segment_lower_bound` and `segment_upper_bound` should be
+    // adjusted.
     let mut umin = lambda;
     let mut umax = minlambda;
     // boundaries of the segment's value
@@ -173,65 +193,95 @@ pub fn condat_denoise<T>(input: &Vec<T>, lambda: T) -> Vec<T>
     let mut kminus = 0;
 
     loop {
-        if k == (width - 1) {
+        if current_input_index == (width - 1) {
+            // Reached the end of the input. Now process the last
+            // groups of jumps.
             if umin < num::zero() {
-                // if segment_lower_bound is too high,
-                // jump down.
-                output.extend(iter::repeat(segment_lower_bound).take(kminus - k0 + 1));
-                k0 = kminus + 1;
-                sync_values(k0, &mut [&mut k, &mut kminus]);
+                // negative jump is necessary as `segment_lower_bound`
+                // is too high.
+                output.extend(iter::repeat(segment_lower_bound).take(kminus - segment_start + 1));
+                segment_start = kminus + 1;
+                sync_values(segment_start, &mut [&mut current_input_index, &mut kminus]);
                 segment_lower_bound = input[kminus];
                 umin = lambda;
                 umax = segment_lower_bound + umin - segment_upper_bound;
             } else if umax > num::zero() {
                 // if segment_upper_bound is too low,
                 // jump up.
-                output.extend(iter::repeat(segment_upper_bound).take(kplus - k0 + 1));
-                k0 = kplus + 1;
-                sync_values(k0, &mut [&mut k, &mut kplus]);
+                output.extend(iter::repeat(segment_upper_bound).take(kplus - segment_start + 1));
+                segment_start = kplus + 1;
+                sync_values(segment_start, &mut [&mut current_input_index, &mut kplus]);
                 segment_upper_bound = input[kplus];
                 umax = minlambda;
                 umin = segment_upper_bound + umax - segment_lower_bound;
             } else {
-                // segment_lower_bound and segment_upper_bound is appropriate.
-                segment_lower_bound += umin /
-                                       num::FromPrimitive::from_usize(k - k0 + 1)
-                    .expect("Unable to convert usize to num::FromPrimitive.");
-                output.extend(iter::repeat(segment_lower_bound).take(k - k0 + 1));
+                // segment_lower_bound and segment_upper_bound are not
+                // too high or not too low. Adjust the
+                // `segment_lower_bound` to reflect the difference
+                // between the current input value and value at the
+                // begingning of the segment, and extend the output.
+                segment_lower_bound +=
+                    umin /
+                    num::FromPrimitive::from_usize(current_input_index - segment_start + 1)
+                        .expect("Unable to convert usize to num::FromPrimitive.");
+                output.extend(iter::repeat(segment_lower_bound)
+                    .take(current_input_index - segment_start + 1));
                 return output;
             }
         } else {
-            umin += input[k + 1] - segment_lower_bound; // input 0 and 1
-            umax += input[k + 1] - segment_upper_bound; // input 0 and 1
+            umin += input[current_input_index + 1] - segment_lower_bound;
+            umax += input[current_input_index + 1] - segment_upper_bound;
             if umin < minlambda {
-                output.extend(iter::repeat(segment_lower_bound).take(kminus - k0 + 1));
-                k0 = kminus + 1;
-                sync_values(k0, &mut [&mut k, &mut kminus, &mut kplus]);
+                // if next value (`input[current_input_index + 1]`is
+                // much smaller than `segment_lower_bound`, make a
+                // negative jump. Next value becomes the
+                // `segment_lower_bound`, and `segment_upper_bound` is
+                // adjusted accordingly.
+                output.extend(iter::repeat(segment_lower_bound).take(kminus - segment_start + 1));
+                segment_start = kminus + 1;
+                sync_values(segment_start,
+                            &mut [&mut current_input_index, &mut kminus, &mut kplus]);
                 segment_lower_bound = input[kplus];
                 segment_upper_bound = segment_lower_bound + twolambda;
                 umin = lambda;
                 umax = minlambda;
             } else if umax > lambda {
-                output.extend(iter::repeat(segment_upper_bound).take(kplus - k0 + 1));
-                k0 = kplus + 1;
-                sync_values(k0, &mut [&mut k, &mut kminus, &mut kplus]);
+                // if next value (`input[current_input_index + 1]`is
+                // much larger than `segment_upper_bound`, make a
+                // negative jump. Next value becomes the
+                // `segment_upper_bound`, and `segment_lower_bound` is
+                // adjusted accordingly.
+                output.extend(iter::repeat(segment_upper_bound).take(kplus - segment_start + 1));
+                segment_start = kplus + 1;
+                sync_values(segment_start,
+                            &mut [&mut current_input_index, &mut kminus, &mut kplus]);
                 segment_upper_bound = input[kplus];
                 segment_lower_bound = segment_upper_bound - twolambda;
                 umin = lambda;
                 umax = minlambda;
             } else {
-                k += 1;
+                // `segment_upper_bound` and `segment_lower_bound` are
+                // appropriate and therefore no jump is necessary.
+                current_input_index += 1;
                 if umin >= lambda {
-                    kminus = k;
-                    segment_lower_bound = (segment_lower_bound + (umin - lambda)) /
-                                          num::FromPrimitive::from_usize(kminus - k0 + 1)
+                    // if `umin` is greater than lambda (threshold),
+                    // adjust `segment_lower_bound` to be a little
+                    // higher.
+                    kminus = current_input_index;
+                    segment_lower_bound += (umin - lambda) /
+                                           num::FromPrimitive::from_usize(kminus - segment_start +
+                                                                          1)
                         .expect("Unable to convert usize to num::FromPrimitive.");
                     umin = lambda;
                 }
                 if umax <= minlambda {
-                    kplus = k;
+                    // if `umax` is smaller than -lambda (threshold),
+                    // adjust `segment_upper_bound` to be a little
+                    // lower.
+                    kplus = current_input_index;
                     segment_upper_bound += (umax + lambda) /
-                                           num::FromPrimitive::from_usize(kplus - k0 + 1)
+                                           num::FromPrimitive::from_usize(kplus - segment_start +
+                                                                          1)
                         .expect("Unable to convert usize to num::FromPrimitive.");
                     umax = minlambda;
                 }
@@ -310,11 +360,12 @@ mod tests {
     #[test]
     fn condat_test_large_lambda() {
         let input = vec![111.0, 422.1, 145.2, 248.2, 871.4, 675.2, 436.2, 310.1];
-        let output = condat_denoise(&input, 10000.0);
+        let output = condat_denoise(&input, 700.0);
         // The expected output is taken from the Laurent Condat's C
         // implementation.
         let output_expected = vec![402.425049, 402.425049, 402.425049, 402.425049, 402.425049,
                                    402.425049, 402.425049, 402.425049];
+        println!("{:?}", output);
         for i in 0..input.len() {
             let output_data = output[i] as f64;
             let expected_data = output_expected[i] as f64;
