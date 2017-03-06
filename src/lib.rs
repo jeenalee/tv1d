@@ -31,9 +31,11 @@ use std::ops;
 /// A `lambda` value may provide different degrees of denoising for
 /// different inputs, except for `lambda` that is `0`.
 ///
-/// `lambda` closer to `0` means the denoised output will resemble the
-/// input more. As `lambda` increases, the denoised output values
-/// become closer to the average of the input values.
+/// A positive `lambda` closer to `0` will result in a denoised output
+/// that will more closely resemble the input. As `lambda` increases, the
+/// denoised output values become closer to the average of the input
+/// values. A negative `lambda` will result in an output that is
+/// noisier than the input.
 ///
 /// # Panics
 /// Panics if input vector's length is `0`.
@@ -58,6 +60,14 @@ use std::ops;
 /// assert_eq!(denoised_with_larger_lambda, vec![3.0, 3.0, 3.0, 3.0, 3.0]);
 /// ```
 ///
+/// With negative `lambda`, the output becomes noisier than the input:
+///
+/// ```
+/// let input = vec![1.0, 2.0, 3.0, 4.0, 5.0];
+///
+/// let denoised_with_negative_lambda = tautstring(input, -10.0);
+/// assert_eq!(denoised_with_negative_lambda, vec![11.0, 3.0, 3.0, 3.0, -5.0]);
+/// ```
 pub fn tautstring<T>(input: &[T], lambda: T) -> Vec<T>
     where T: num::Num + num::FromPrimitive + cmp::PartialOrd
     + ops::AddAssign<T> + ops::SubAssign<T>  + num::Float + num::ToPrimitive
