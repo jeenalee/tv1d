@@ -217,7 +217,7 @@ pub fn tautstring<T>(input: &[T], lambda: T) -> Vec<T>
 /// become closer to the average of the input values.
 ///
 /// # Panics
-/// Panics if input vector's length is `0`.
+/// Panics if input vector's length is `0` or `lambda` is less than `0`.
 ///
 /// # Examples
 ///
@@ -245,6 +245,8 @@ pub fn condat<T>(input: &[T], lambda: T) -> Vec<T>
 {
     assert!(input.len() > 0,
             "Input list should have at least one value.");
+
+    assert!(lambda >= num::zero(), "Lambda must be greater than or equal to 0.");
 
     let width = input.len();
     let mut output = Vec::with_capacity(width);
