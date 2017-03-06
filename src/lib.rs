@@ -25,8 +25,9 @@ use std::ops;
 /// values. Therefore, if the sum of inputs reaches infinity, which is
 /// more likely if the input values are very large or the input has a
 /// large length, this algorithm may not return meaningful denoised
-/// output. Relatedly, the input must be a float, not integers. If the
-/// input is integer or large, please consider using `tv1d::condat`.
+/// output. Relatedly, the input must be a float, not an integer. If
+/// the input is an integer or large, please consider using
+/// [`tv1d::condat`](../tv1d/fn.condat.html).
 ///
 /// A `lambda` value may provide different degrees of denoising for
 /// different inputs, except for `lambda` that is `0`.
