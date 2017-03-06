@@ -22,14 +22,18 @@ use std::ops;
 /// transformed taut.
 ///
 /// Note that this algorithm is based on the running sum of the input
-/// values. If the input values are very large or there are many of
-/// them, this function will fail. The input must be a slice of
-/// floats, not integers.
+/// values. Therefore, if the sum of inputs reaches infinity, which is
+/// more likely if the input values are very large or the input has a
+/// large length, this algorithm may not return meaningful denoised
+/// output. Relatedly, the input must be a float, not integers. If the
+/// input is integer or large, please consider using `tv1d::condat`.
 ///
-/// `lambda` closer to `0` means the denoised
-/// output will resemble the input more. As `lambda` increases, the
-/// denoised output values become closer to the average of the input
-/// values.
+/// A `lambda` value may provide different degrees of denoising for
+/// different inputs, except for `lambda` that is `0`.
+///
+/// `lambda` closer to `0` means the denoised output will resemble the
+/// input more. As `lambda` increases, the denoised output values
+/// become closer to the average of the input values.
 ///
 /// # Panics
 /// Panics if input vector's length is `0`.
@@ -204,6 +208,10 @@ pub fn tautstring<T>(input: &[T], lambda: T) -> Vec<T>
 /// Algorithm for 1D Total Variation
 /// Denoising"](https://www.gipsa-lab.grenoble-inp.fr/~laurent.condat/publis/Condat-fast_TV-SPL-2013.pdf).
 ///
+/// A `lambda` value may provide different degrees of denoising for
+/// different inputs, except for `lambda` that is `0`.
+///
+
 /// `lambda` closer to `0` means the denoised output will resemble the
 /// input more. As `lambda` increases, the denoised output values
 /// become closer to the average of the input values.
