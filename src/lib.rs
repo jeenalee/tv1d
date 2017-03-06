@@ -41,7 +41,7 @@ use std::ops;
 /// ```
 /// let input = vec![1.0, 2.0, 3.0, 4.0, 5.0];
 ///
-/// let denoised_with_zero_lambda = tautstring_denoise(input, 0.0);
+/// let denoised_with_zero_lambda = tautstring(input, 0.0);
 /// assert_eq!(denoised_with_zero_lambda, vec![1.0, 2.0, 3.0, 4.0, 5.0])
 /// ```
 ///
@@ -50,11 +50,11 @@ use std::ops;
 /// ```
 /// let input = vec![1.0, 2.0, 3.0, 4.0, 5.0];
 ///
-/// let denoised_with_larger_lambda = tautstring_denoise(input, 10.0);
+/// let denoised_with_larger_lambda = tautstring(input, 10.0);
 /// assert_eq!(denoised_with_larger_lambda, vec![3.0, 3.0, 3.0, 3.0, 3.0]);
 /// ```
 ///
-pub fn tautstring_denoise<T>(input: &[T], lambda: T) -> Vec<T>
+pub fn tautstring<T>(input: &[T], lambda: T) -> Vec<T>
     where T: num::Num + num::FromPrimitive + cmp::PartialOrd
     + ops::AddAssign<T> + ops::SubAssign<T>  + num::Float + num::ToPrimitive
 {
@@ -218,7 +218,7 @@ pub fn tautstring_denoise<T>(input: &[T], lambda: T) -> Vec<T>
 /// ```
 /// let input = vec![1.0, 2.0, 3.0, 4.0, 5.0];
 ///
-/// let denoised_with_zero_lambda = condat_denoise(input, 0.0);
+/// let denoised_with_zero_lambda = condat(input, 0.0);
 /// assert_eq!(denoised_with_zero_lambda, vec![1.0, 2.0, 3.0, 4.0, 5.0])
 /// ```
 ///
@@ -227,11 +227,11 @@ pub fn tautstring_denoise<T>(input: &[T], lambda: T) -> Vec<T>
 /// ```
 /// let input = vec![1.0, 2.0, 3.0, 4.0, 5.0];
 ///
-/// let denoised_with_larger_lambda = condat_denoise(input, 10.0);
+/// let denoised_with_larger_lambda = condat(input, 10.0);
 /// assert_eq!(denoised_with_larger_lambda, vec![3.0, 3.0, 3.0, 3.0, 3.0]);
 /// ```
 ///
-pub fn condat_denoise<T>(input: &[T], lambda: T) -> Vec<T>
+pub fn condat<T>(input: &[T], lambda: T) -> Vec<T>
     where T: num::Num + num::FromPrimitive
     + cmp::PartialOrd + ops::Neg<Output=T> + ops::AddAssign<T> + Copy
 {
@@ -373,14 +373,14 @@ mod tests {
     #[test]
     fn tautstring_test_input_output_length() {
         let input = vec![1.0, 2.1, 5.2, 8.2, 1.4, 5.2, 6.2, 10.1];
-        let output = tautstring_denoise(&input, 0.0);
+        let output = tautstring(&input, 0.0);
         assert_eq!(input.len(), output.len());
     }
 
     #[test]
     fn tautstring_test_zero_lambda() {
         let input = vec![1.0, 2.1, 5.2, 8.2, 1.4, 5.2, 6.2, 10.1];
-        let output = tautstring_denoise(&input, 0.0);
+        let output = tautstring(&input, 0.0);
         let output_expected = vec![1.0, 2.1, 5.2, 8.2, 1.4, 5.2, 6.2, 10.1];
         for i in 0..input.len() {
             let output_data = output[i] as f64;
@@ -392,7 +392,7 @@ mod tests {
     #[test]
     fn tautstring_test_large_lambda() {
         let input = vec![1.0, 2.1, 5.2, 8.2, 1.4, 5.2, 6.2, 10.1];
-        let output = tautstring_denoise(&input, 100.0);
+        let output = tautstring(&input, 100.0);
         // The expected output is taken from the Laurent Condat's C
         // implementation.
         let output_expected = vec![4.925, 4.925, 4.925, 4.925, 4.925, 4.925, 4.925, 4.925];
@@ -406,7 +406,7 @@ mod tests {
     #[test]
     fn tautstring_test_moderate_lambda() {
         let input = vec![111.0, 422.1, 145.2, 248.2, 871.4, 675.2, 436.2, 310.1];
-        let output = tautstring_denoise(&input, 5.0);
+        let output = tautstring(&input, 5.0);
         // The expected output is taken from the Laurent Condat's C
         // implementation.
         let output_expected = vec![116.0, 412.100006, 155.199997, 248.199997, 861.400024,
@@ -422,20 +422,20 @@ mod tests {
     #[should_panic]
     fn tautstring_test_empty_input() {
         let input = vec![];
-        condat_denoise(&input, 1.0);
+        condat(&input, 1.0);
     }
 
     #[test]
     fn condat_test_input_output_length() {
         let input = vec![1.0, 2.1, 5.2, 8.2, 1.4, 5.2, 6.2, 10.1];
-        let output = condat_denoise(&input, 0.0);
+        let output = condat(&input, 0.0);
         assert_eq!(input.len(), output.len());
     }
 
     #[test]
     fn condat_test_zero_lambda() {
         let input = vec![1.0, 2.1, 5.2, 8.2, 1.4, 5.2, 6.2, 10.1];
-        let output = condat_denoise(&input, 0.0);
+        let output = condat(&input, 0.0);
         let output_expected = vec![1.0, 2.1, 5.2, 8.2, 1.4, 5.2, 6.2, 10.1];
         assert_eq!(output, output_expected);
     }
@@ -443,7 +443,7 @@ mod tests {
     #[test]
     fn condat_test_large_lambda() {
         let input = vec![111.0, 422.1, 145.2, 248.2, 871.4, 675.2, 436.2, 310.1];
-        let output = condat_denoise(&input, 700.0);
+        let output = condat(&input, 700.0);
         // The expected output is taken from the Laurent Condat's C
         // implementation.
         let output_expected = vec![402.425049, 402.425049, 402.425049, 402.425049, 402.425049,
@@ -459,7 +459,7 @@ mod tests {
     #[test]
     fn condat_test_moderate_lambda() {
         let input = vec![1.0, 2.1, 5.2, 8.2, 1.4, 5.2, 6.2, 10.1];
-        let output = condat_denoise(&input, 3.0);
+        let output = condat(&input, 3.0);
         // The expected output is taken from the Laurent Condat's C
         // implementation.
         let output_expected = vec![3.050000, 3.050000, 4.933333, 4.933333, 4.933333, 5.200000,
@@ -475,13 +475,13 @@ mod tests {
     #[should_panic]
     fn condat_test_negative_lambda() {
         let input = vec![1.0, 2.1, 5.2, 8.2, 1.4, 5.2, 6.2, 10.1];
-        condat_denoise(&input, -1.0);
+        condat(&input, -1.0);
     }
 
     #[test]
     #[should_panic]
     fn condat_test_empty_input() {
         let input = vec![];
-        condat_denoise(&input, 1.0);
+        condat(&input, 1.0);
     }
 }
