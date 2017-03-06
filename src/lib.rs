@@ -1,5 +1,4 @@
-//! TODO
-//!Total Variation 1D Denoising Algorithms.
+//! A collection of total variation denoising algorithms for 1D data.
 
 #![deny(missing_docs)]
 #![deny(missing_debug_implementations)]
@@ -9,22 +8,52 @@ extern crate num;
 mod utils;
 
 use std::cmp;
-use std::fmt;
 use std::iter;
 use std::ops;
 
-/// TODO
-/// Note: numerical blow-up if floattype=float for N>=10^6
-/// because the algorithm is based on the running sum of the signal
-/// values.
-/// # Panics
-/// Panics if input vector's length is 0.
-/// # Examples
-/// 
-/// let output = tautstring_denoise(vec![1.0, 2.0, 3.0, 4.0], 1.0);
-/// 
+/// Denoises the input values based on a tautstring algorithm by
+/// Davies P. and Kovac A. in 2001 in the paper ["Local extremes, runs, strings
+/// and
+/// multiresolution"](https://pure.tue.nl/ws/files/2200362/Metis214115.pdf).
 ///
-/// Input values must be floats, not integers.
+/// The algorithm was implemented by Condat L. in C, which was then
+/// implemented in Rust here. The algorithm can be understood as
+/// assuming the input values as a string of data points, which is
+/// transformed taut.
+///
+/// Note that this algorithm is based on the running sum of the input
+/// values. If the input values are very large or there are many of
+/// them, this function will fail. The input must be a slice of
+/// floats, not integers.
+///
+/// `lambda` closer to `0` means the denoised
+/// output will resemble the input more. As `lambda` increases, the
+/// denoised output values become closer to the average of the input
+/// values.
+///
+/// # Panics
+/// Panics if input vector's length is `0`.
+///
+/// # Examples
+///
+/// With `lambda` equal to `0`, the denoised output will be the same as the input:
+///
+/// ```
+/// let input = vec![1.0, 2.0, 3.0, 4.0, 5.0];
+///
+/// let denoised_with_zero_lambda = tautstring_denoise(input, 0.0);
+/// assert_eq!(denoised_with_zero_lambda, vec![1.0, 2.0, 3.0, 4.0, 5.0])
+/// ```
+///
+/// With larger `lambda`, the denoised output becomes closer to the average of the input:
+///
+/// ```
+/// let input = vec![1.0, 2.0, 3.0, 4.0, 5.0];
+///
+/// let denoised_with_larger_lambda = tautstring_denoise(input, 10.0);
+/// assert_eq!(denoised_with_larger_lambda, vec![3.0, 3.0, 3.0, 3.0, 3.0]);
+/// ```
+///
 pub fn tautstring_denoise<T>(input: &[T], lambda: T) -> Vec<T>
     where T: num::Num + num::FromPrimitive + cmp::PartialOrd
     + ops::AddAssign<T> + ops::SubAssign<T>  + num::Float + num::ToPrimitive
@@ -34,44 +63,57 @@ pub fn tautstring_denoise<T>(input: &[T], lambda: T) -> Vec<T>
     let mut output = vec![num::zero(); input.len()];
     let width = input.len() + 1;
 
+    // Vectors for keeping track of indices.
     let mut index = vec![num::zero(); width];
     let mut index_low = vec![num::zero(); width];
     let mut index_up = vec![num::zero(); width];
 
+    // `slope_low` and `slope_up` is used to store the slope between
+    // consecutive input values.
     let mut slope_low = vec![num::zero(); width];
     let mut slope_up = vec![num::zero(); width];
 
+    // `z` stores either `lower_boundary` or `upper_boundary`
+    // throughout the program, which will be used as the denoised
+    // output at the end of the program.
     let mut z = vec![num::zero(); width];
-    // Lower and upper boundaries
-    let mut y_low = vec![num::zero(); width];
-    let mut y_up = vec![num::zero(); width];
+
+    // `lower_bound` and `upper_bound` first stores the
+    // cumulative sums of the input values. This will be used to find
+    // slopes between each input points, and later in the denoising
+    // step will be used as the denoised output.
+    let mut lower_bound = vec![num::zero(); width];
+    let mut upper_bound = vec![num::zero(); width];
+
     let mut s_low = num::zero();
     let mut c_low = 0;
     let mut s_up = 0;
     let mut c_up = 0;
     let mut c = 0;
+
+    // First define `lower_bound` and `upper_bound` by the
+    // first input value and lambda.
+    lower_bound[1] = input[0] - lambda;
+    upper_bound[1] = input[0] + lambda;
+
+    // Generic tracker.
     let mut i = 2;
 
-    // The boundaries are first defined by the input values.
-    y_low[1] = input[0] - lambda;
-    y_up[1] = input[0] + lambda;
-    // Based on the input values, get culmulative sums.
+    // Get culmulative sum of the input values.
     while i < width {
-        y_low[i] = y_low[i - 1] + input[i - 1];
-        y_up[i] = y_up[i - 1] + input[i - 1];
+        lower_bound[i] = lower_bound[i - 1] + input[i - 1];
+        upper_bound[i] = upper_bound[i - 1] + input[i - 1];
         i += 1;
     }
 
-    // The last value's lower boundary is elevated by lambda.
-    y_low[width - 1] += lambda;
-    // The last value's lower boundary is decreased by lambda.
-    y_up[width - 1] -= lambda;
+    lower_bound[width - 1] += lambda;
+    upper_bound[width - 1] -= lambda;
 
     slope_low[0] = num::Float::infinity();
     slope_up[0] = num::Float::neg_infinity();
 
-    // `z` is first set to be the first lower boundary.
-    z[0] = y_low[0];
+    // `z` is first set to be the first lower bound.
+    z[0] = lower_bound[0];
 
     for i in 1..width {
         c_low += 1;
@@ -79,33 +121,32 @@ pub fn tautstring_denoise<T>(input: &[T], lambda: T) -> Vec<T>
 
         index_low[c_low] = i;
         index_up[c_up] = i;
-        slope_low[c_low] = y_low[i] - y_low[i - 1];
+        slope_low[c_low] = lower_bound[i] - lower_bound[i - 1];
 
-        // `c_low` is too large. Decrease it by one.
         while (c_low > s_low + 1) && (slope_low[cmp::max(s_low, c_low - 1)] <= slope_low[c_low]) {
             c_low -= 1;
             index_low[c_low] = i;
             if c_low > s_low + 1 {
-                slope_low[c_low] = (y_low[i] - y_low[index_low[c_low - 1]]) /
+                slope_low[c_low] = (lower_bound[i] - lower_bound[index_low[c_low - 1]]) /
                                    num::FromPrimitive::from_usize(i - index_low[c_low - 1])
                     .expect("Unable to convert usize to num::FromPrimitive.");
             } else {
-                slope_low[c_low] = (y_low[i] - z[c]) /
+                slope_low[c_low] = (lower_bound[i] - z[c]) /
                                    num::FromPrimitive::from_usize(i - index[c])
                     .expect("Unable to convert usize to num::FromPrimitive.");
             }
         }
 
-        slope_up[c_up] = y_up[i] - y_up[i - 1];
+        slope_up[c_up] = upper_bound[i] - upper_bound[i - 1];
         while (c_up > s_up + 1) && (slope_up[cmp::max(c_up - 1, s_up)] >= slope_up[c_up]) {
             c_up -= 1;
             index_up[c_up] = i;
             if c_up > s_up + 1 {
-                slope_up[c_up] = (y_up[i] - y_up[index_up[c_up - 1]]) /
+                slope_up[c_up] = (upper_bound[i] - upper_bound[index_up[c_up - 1]]) /
                                  num::FromPrimitive::from_usize(i - index_up[c_up - 1])
                     .expect("Unable to convert usize to num::FromPrimitive.");
             } else {
-                slope_up[c_up] = (y_up[i] - z[c]) /
+                slope_up[c_up] = (upper_bound[i] - z[c]) /
                                  num::FromPrimitive::from_usize(i - index[c])
                     .expect("Unable to convert usize to num::FromPrimitive.");
             }
@@ -115,9 +156,9 @@ pub fn tautstring_denoise<T>(input: &[T], lambda: T) -> Vec<T>
             c += 1;
             s_up += 1;
             index[c] = index_up[s_up];
-            z[c] = y_up[index[c]];
+            z[c] = upper_bound[index[c]];
             index_low[s_low] = index[c];
-            slope_low[c_low] = (y_low[i] - z[c]) /
+            slope_low[c_low] = (lower_bound[i] - z[c]) /
                                num::FromPrimitive::from_usize(i - index[c])
                 .expect("Unable to convert usize to num::FromPrimitive.");;
         }
@@ -126,18 +167,21 @@ pub fn tautstring_denoise<T>(input: &[T], lambda: T) -> Vec<T>
             c += 1;
             s_low += 1;
             index[c] = index_low[s_low];
-            z[c] = y_low[index[c]];
+            z[c] = lower_bound[index[c]];
             index_up[s_up] = index[c];
-            slope_up[c_up] = (y_up[i] - z[c]) /
+            slope_up[c_up] = (upper_bound[i] - z[c]) /
                              num::FromPrimitive::from_usize(i - index[c])
                 .expect("Unable to convert usize to num::FromPrimitive.");;
         }
     }
+
     for i in 1..(c_low - s_low + 1) {
         index[c + i] = index_low[s_low + i];
-        z[c + i] = y_low[index[c + i]];
+        z[c + i] = lower_bound[index[c + i]];
     }
     c += c_low - s_low;
+
+    // Finally, write the denoised output.
     let mut output_index = 0;
     let mut denoised_output;
     i = 1;
@@ -154,16 +198,39 @@ pub fn tautstring_denoise<T>(input: &[T], lambda: T) -> Vec<T>
     output
 }
 
-/// Denoise an array of data points given a `lambda`, which decides
-/// the degree of denoising.
+
+/// Denoises the input values based on a non-iterative algorithm
+/// described by Condat L. in 2013 in the paper ["A Direct
+/// Algorithm for 1D Total Variation
+/// Denoising"](https://www.gipsa-lab.grenoble-inp.fr/~laurent.condat/publis/Condat-fast_TV-SPL-2013.pdf).
 ///
-/// A very large `lambda` will create a denoised output, in which
-/// every value is equivalent to the average of the input data points.
-/// A very small `lambda` (i.e. 0) will not denoise the input at all,
-/// creating an output that is the same as the input.
+/// `lambda` closer to `0` means the denoised output will resemble the
+/// input more. As `lambda` increases, the denoised output values
+/// become closer to the average of the input values.
 ///
-/// This algorithm was first described by Laurent Condat in 2013 in
-/// his paper "A Direct Algorithm for 1D Total Variation Denoising."
+/// # Panics
+/// Panics if input vector's length is `0`.
+///
+/// # Examples
+///
+/// With `lambda` equal to `0`, the denoised output will be the same as the input:
+///
+/// ```
+/// let input = vec![1.0, 2.0, 3.0, 4.0, 5.0];
+///
+/// let denoised_with_zero_lambda = condat_denoise(input, 0.0);
+/// assert_eq!(denoised_with_zero_lambda, vec![1.0, 2.0, 3.0, 4.0, 5.0])
+/// ```
+///
+/// With larger `lambda`, the denoised output becomes closer to the average of the input:
+///
+/// ```
+/// let input = vec![1.0, 2.0, 3.0, 4.0, 5.0];
+///
+/// let denoised_with_larger_lambda = condat_denoise(input, 10.0);
+/// assert_eq!(denoised_with_larger_lambda, vec![3.0, 3.0, 3.0, 3.0, 3.0]);
+/// ```
+///
 pub fn condat_denoise<T>(input: &[T], lambda: T) -> Vec<T>
     where T: num::Num + num::FromPrimitive
     + cmp::PartialOrd + ops::Neg<Output=T> + ops::AddAssign<T> + Copy
@@ -177,33 +244,37 @@ pub fn condat_denoise<T>(input: &[T], lambda: T) -> Vec<T>
     // `current_input_index` is the location of the element the
     // program is currently inspecting.
     let mut current_input_index = 0;
+
     // `segment_start` is the index for the beginning of current
     // segment.
     let mut segment_start = 0;
 
     let twolambda = T::from_u8(2).expect("Unable to transform `2` to T.") * lambda;
     let minlambda = -lambda;
+
     // `umin` and `umax` are used for keeping track of previous data
     // points we have seen, and will be used to decide whether
     // `segment_lower_bound` and `segment_upper_bound` should be
     // adjusted.
     let mut umin = lambda;
     let mut umax = minlambda;
-    // boundaries of the segment's value
+
+    // `segment_lower_bound` and `segment_upper_bound` are the
+    // Boundaries of the segment's value.
     let mut segment_lower_bound = input[0] - lambda;
     let mut segment_upper_bound = input[0] + lambda;
 
-    // last position where umax = -lambda
+    // The last position where `umax = -lambda`.
     let mut kplus = 0;
-    // last position where umin = lambda
+    // The last position where `umin = lambda`.
     let mut kminus = 0;
 
     loop {
         if current_input_index == (width - 1) {
             // Reached the end of the input. Now process the last
-            // groups of jumps.
+            // set of jumps.
             if umin < num::zero() {
-                // negative jump is necessary as `segment_lower_bound`
+                // Negative jump is necessary as `segment_lower_bound`
                 // is too high.
                 output.extend(iter::repeat(segment_lower_bound).take(kminus - segment_start + 1));
                 segment_start = kminus + 1;
@@ -212,8 +283,7 @@ pub fn condat_denoise<T>(input: &[T], lambda: T) -> Vec<T>
                 umin = lambda;
                 umax = segment_lower_bound + umin - segment_upper_bound;
             } else if umax > num::zero() {
-                // if segment_upper_bound is too low,
-                // jump up.
+                // If `segment_upper_bound` is too low, jump up.
                 output.extend(iter::repeat(segment_upper_bound).take(kplus - segment_start + 1));
                 segment_start = kplus + 1;
                 utils::sync_values(segment_start, &mut [&mut current_input_index, &mut kplus]);
@@ -221,11 +291,11 @@ pub fn condat_denoise<T>(input: &[T], lambda: T) -> Vec<T>
                 umax = minlambda;
                 umin = segment_upper_bound + umax - segment_lower_bound;
             } else {
-                // segment_lower_bound and segment_upper_bound are not
-                // too high or not too low. Adjust the
+                // `segment_lower_bound` and `segment_upper_bound` are
+                // not too high or not too low. Adjust the
                 // `segment_lower_bound` to reflect the difference
                 // between the current input value and value at the
-                // begingning of the segment, and extend the output.
+                // beginning of the segment, and extend the output.
                 segment_lower_bound +=
                     umin /
                     num::FromPrimitive::from_usize(current_input_index - segment_start + 1)
@@ -238,7 +308,7 @@ pub fn condat_denoise<T>(input: &[T], lambda: T) -> Vec<T>
             umin += input[current_input_index + 1] - segment_lower_bound;
             umax += input[current_input_index + 1] - segment_upper_bound;
             if umin < minlambda {
-                // if next value (`input[current_input_index + 1]`is
+                // If next value (`input[current_input_index + 1]`is
                 // much smaller than `segment_lower_bound`, make a
                 // negative jump. Next value becomes the
                 // `segment_lower_bound`, and `segment_upper_bound` is
@@ -252,7 +322,7 @@ pub fn condat_denoise<T>(input: &[T], lambda: T) -> Vec<T>
                 umin = lambda;
                 umax = minlambda;
             } else if umax > lambda {
-                // if next value (`input[current_input_index + 1]`is
+                // If next value (`input[current_input_index + 1]`is
                 // much larger than `segment_upper_bound`, make a
                 // negative jump. Next value becomes the
                 // `segment_upper_bound`, and `segment_lower_bound` is
@@ -267,10 +337,10 @@ pub fn condat_denoise<T>(input: &[T], lambda: T) -> Vec<T>
                 umax = minlambda;
             } else {
                 // `segment_upper_bound` and `segment_lower_bound` are
-                // appropriate and therefore no jump is necessary.
+                // appropriate, and therefore no jump is necessary.
                 current_input_index += 1;
                 if umin >= lambda {
-                    // if `umin` is greater than lambda (threshold),
+                    // If `umin` is greater than lambda (threshold),
                     // adjust `segment_lower_bound` to be a little
                     // higher.
                     kminus = current_input_index;
@@ -281,7 +351,7 @@ pub fn condat_denoise<T>(input: &[T], lambda: T) -> Vec<T>
                     umin = lambda;
                 }
                 if umax <= minlambda {
-                    // if `umax` is smaller than -lambda (threshold),
+                    // If `umax` is smaller than -lambda (threshold),
                     // adjust `segment_upper_bound` to be a little
                     // lower.
                     kplus = current_input_index;
