@@ -2,6 +2,10 @@
 name = "tv1d"
 version = "0.1.0"
 authors = ["jeenalee <ijeenalee@gmail.com>"]
+description = "Total variation denoising algorithms for 1D data."
+repository = "https://github.com/jeenalee/tv1d"
+readme = "./README.md"
+license = "MIT"
 
 [dependencies]
 num = "0.1.37"
