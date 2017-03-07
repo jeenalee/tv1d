@@ -45,31 +45,37 @@ use std::ops;
 /// With `lambda` equal to `0`, the denoised output will be the same as the input:
 ///
 /// ```
+/// use tv1d;
+///
 /// let input = vec![1.0, 2.0, 3.0, 4.0, 5.0];
 /// let lambda = 0.0;
 ///
-/// let denoised_with_zero_lambda = tautstring(input, lambda);
+/// let denoised_with_zero_lambda = tv1d::tautstring(&input, lambda);
 /// assert_eq!(denoised_with_zero_lambda, vec![1.0, 2.0, 3.0, 4.0, 5.0])
 /// ```
 ///
 /// With larger `lambda`, the denoised output becomes closer to the average of the input:
 ///
 /// ```
+/// use tv1d;
+///
 /// let input = vec![1.0, 2.0, 3.0, 4.0, 5.0];
 /// let lambda = 10.0;
 ///
-/// let denoised_with_larger_lambda = tautstring(input, lambda);
+/// let denoised_with_larger_lambda = tv1d::tautstring(&input, lambda);
 /// assert_eq!(denoised_with_larger_lambda, vec![3.0, 3.0, 3.0, 3.0, 3.0]);
 /// ```
 ///
 /// Same `lambda` may provide a different degree of denoising for a different input:
 ///
 /// ```
+/// use tv1d;
+///
 /// let input = vec![100.0, 200.0, 300.0, 400.0, 500.0];
 /// let lambda = 10.0;
 ///
-/// let denoised_larger_inputs = tautstring(input, lambda);
-/// assert_eq!(denoised_larger_inputs, vec![110, 200, 300, 400, 490]);
+/// let denoised_larger_inputs = tv1d::tautstring(&input, lambda);
+/// assert_eq!(denoised_larger_inputs, vec![110.0, 200.0, 300.0, 400.0, 490.0]);
 /// ```
 pub fn tautstring<T>(input: &[T], lambda: T) -> Vec<T>
     where T: num::Num + num::FromPrimitive + cmp::PartialOrd
@@ -243,31 +249,37 @@ pub fn tautstring<T>(input: &[T], lambda: T) -> Vec<T>
 /// With `lambda` equal to `0`, the denoised output will be the same as the input:
 ///
 /// ```
+/// use tv1d;
+///
 /// let input = vec![1.0, 2.0, 3.0, 4.0, 5.0];
 /// let lambda = 0.0;
 ///
-/// let denoised_with_zero_lambda = condat(input, lambda);
+/// let denoised_with_zero_lambda = tv1d::condat(&input, lambda);
 /// assert_eq!(denoised_with_zero_lambda, vec![1.0, 2.0, 3.0, 4.0, 5.0])
 /// ```
 ///
 /// With larger `lambda`, the denoised output becomes closer to the average of the input:
 ///
 /// ```
+/// use tv1d;
+///
 /// let input = vec![1.0, 2.0, 3.0, 4.0, 5.0];
 /// let lambda = 10.0;
 ///
-/// let denoised_with_larger_lambda = condat(input, lambda);
+/// let denoised_with_larger_lambda = tv1d::condat(&input, lambda);
 /// assert_eq!(denoised_with_larger_lambda, vec![3.0, 3.0, 3.0, 3.0, 3.0]);
 /// ```
 ///
 /// Same `lambda` may provide a different degree of denoising for a different input:
 ///
 /// ```
+/// use tv1d;
+///
 /// let input = vec![100.0, 200.0, 300.0, 400.0, 500.0];
 /// let lambda = 10.0;
 ///
-/// let denoised_larger_inputs = tautstring(input, lambda);
-/// assert_eq!(denoised_larger_inputs, vec![110, 200, 300, 400, 490]);
+/// let denoised_larger_inputs = tv1d::tautstring(&input, lambda);
+/// assert_eq!(denoised_larger_inputs, vec![110.0, 200.0, 300.0, 400.0, 490.0]);
 /// ```
 pub fn condat<T>(input: &[T], lambda: T) -> Vec<T>
     where T: num::Num + num::FromPrimitive
