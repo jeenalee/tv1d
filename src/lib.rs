@@ -231,7 +231,7 @@ pub fn tautstring<T>(input: &[T], lambda: T) -> Vec<T>
 /// Denoises the input values based on a non-iterative algorithm
 /// described by Condat L. in 2013 in the paper ["A Direct
 /// Algorithm for 1D Total Variation
-/// Denoising"](https://www.gipsa-lab.grenoble-inp.fr/~laurent.condat/publis/Condat-fast_TV-SPL-2013.pdf).
+/// Denoising"](http://tinyurl.com/gnsh79b).
 ///
 /// A `lambda` value may provide different degrees of denoising for
 /// different inputs, except for `lambda` that is `0`.
