@@ -215,6 +215,7 @@ pub fn tautstring<T>(input: &[T], lambda: T) -> Vec<T>
         }
         i += 1;
     }
+    assert!(input.len() == output.len(), "Input and output must have the same length.");
     output
 }
 
@@ -337,6 +338,7 @@ pub fn condat<T>(input: &[T], lambda: T) -> Vec<T>
                         .expect("Unable to convert usize to num::FromPrimitive.");
                 output.extend(iter::repeat(segment_lower_bound)
                     .take(current_input_index - segment_start + 1));
+                assert!(input.len() == output.len(), "Input and output must have the same length.");
                 return output;
             }
         } else {
