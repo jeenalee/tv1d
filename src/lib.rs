@@ -35,11 +35,10 @@ use std::ops;
 /// A positive `lambda` closer to `0` will result in a denoised output
 /// that will more closely resemble the input. As `lambda` increases, the
 /// denoised output values become closer to the average of the input
-/// values. A negative `lambda` will result in an output that is
-/// noisier than the input.
+/// values.
 ///
 /// # Panics
-/// Panics if input vector's length is `0`.
+/// Panics if input vector's length is `0` or `lambda` is less than `0`.
 ///
 /// # Examples
 ///
@@ -47,8 +46,9 @@ use std::ops;
 ///
 /// ```
 /// let input = vec![1.0, 2.0, 3.0, 4.0, 5.0];
+/// let lambda = 0.0;
 ///
-/// let denoised_with_zero_lambda = tautstring(input, 0.0);
+/// let denoised_with_zero_lambda = tautstring(input, lambda0);
 /// assert_eq!(denoised_with_zero_lambda, vec![1.0, 2.0, 3.0, 4.0, 5.0])
 /// ```
 ///
@@ -56,18 +56,10 @@ use std::ops;
 ///
 /// ```
 /// let input = vec![1.0, 2.0, 3.0, 4.0, 5.0];
+/// let lambda = 10.0;
 ///
-/// let denoised_with_larger_lambda = tautstring(input, 10.0);
+/// let denoised_with_larger_lambda = tautstring(input, lambda);
 /// assert_eq!(denoised_with_larger_lambda, vec![3.0, 3.0, 3.0, 3.0, 3.0]);
-/// ```
-///
-/// With negative `lambda`, the output becomes noisier than the input:
-///
-/// ```
-/// let input = vec![1.0, 2.0, 3.0, 4.0, 5.0];
-///
-/// let denoised_with_negative_lambda = tautstring(input, -10.0);
-/// assert_eq!(denoised_with_negative_lambda, vec![11.0, 3.0, 3.0, 3.0, -5.0]);
 /// ```
 pub fn tautstring<T>(input: &[T], lambda: T) -> Vec<T>
     where T: num::Num + num::FromPrimitive + cmp::PartialOrd
@@ -75,6 +67,9 @@ pub fn tautstring<T>(input: &[T], lambda: T) -> Vec<T>
 {
     assert!(input.len() > 0,
             "Input list should have at least one value.");
+
+    assert!(lambda >= num::zero(), "Lambda must be greater than or equal to 0.");
+
     let mut output = vec![num::zero(); input.len()];
     let width = input.len() + 1;
 
@@ -437,6 +432,13 @@ mod tests {
             let expected_data = output_expected[i] as f64;
             assert!((output_data - expected_data).abs() <= 0.0001);
         }
+    }
+
+    #[test]
+    #[should_panic]
+    fn tautstring_test_negative_lambda() {
+        let input = vec![1.0, 2.1, 5.2, 8.2, 1.4, 5.2, 6.2, 10.1];
+        tautstring(&input, -1.0);
     }
 
     #[test]
