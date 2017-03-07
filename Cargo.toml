@@ -6,6 +6,8 @@ description = "Total variation denoising algorithms for 1D data."
 repository = "https://github.com/jeenalee/tv1d"
 readme = "./README.md"
 license = "MIT"
+keywords = ["denoising", "data"]
+documentation = "https://docs.rs/tv1d/"
 
 [dependencies]
 num = "0.1.37"
