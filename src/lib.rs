@@ -1,4 +1,4 @@
-//! A collection of total variation denoising algorithms for 1D data.
+//! Total variation denoising algorithms for 1D data.
 
 #![deny(missing_docs)]
 #![deny(missing_debug_implementations)]
@@ -60,6 +60,16 @@ use std::ops;
 ///
 /// let denoised_with_larger_lambda = tautstring(input, lambda);
 /// assert_eq!(denoised_with_larger_lambda, vec![3.0, 3.0, 3.0, 3.0, 3.0]);
+/// ```
+///
+/// Same `lambda` may provide a different degree of denoising for a different input:
+///
+/// ```
+/// let input = vec![100.0, 200.0, 300.0, 400.0, 500.0];
+/// let lambda = 10.0;
+///
+/// let denoised_larger_inputs = tautstring(input, lambda);
+/// assert_eq!(denoised_larger_inputs, vec![110, 200, 300, 400, 490]);
 /// ```
 pub fn tautstring<T>(input: &[T], lambda: T) -> Vec<T>
     where T: num::Num + num::FromPrimitive + cmp::PartialOrd
@@ -245,6 +255,15 @@ pub fn tautstring<T>(input: &[T], lambda: T) -> Vec<T>
 /// assert_eq!(denoised_with_larger_lambda, vec![3.0, 3.0, 3.0, 3.0, 3.0]);
 /// ```
 ///
+/// Same `lambda` may provide a different degree of denoising for a different input:
+///
+/// ```
+/// let input = vec![100.0, 200.0, 300.0, 400.0, 500.0];
+/// let lambda = 10.0;
+///
+/// let denoised_larger_inputs = tautstring(input, lambda);
+/// assert_eq!(denoised_larger_inputs, vec![110, 200, 300, 400, 490]);
+/// ```
 pub fn condat<T>(input: &[T], lambda: T) -> Vec<T>
     where T: num::Num + num::FromPrimitive
     + cmp::PartialOrd + ops::Neg<Output=T> + ops::AddAssign<T> + Copy
