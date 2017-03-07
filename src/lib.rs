@@ -48,7 +48,7 @@ use std::ops;
 /// let input = vec![1.0, 2.0, 3.0, 4.0, 5.0];
 /// let lambda = 0.0;
 ///
-/// let denoised_with_zero_lambda = tautstring(input, lambda0);
+/// let denoised_with_zero_lambda = tautstring(input, lambda);
 /// assert_eq!(denoised_with_zero_lambda, vec![1.0, 2.0, 3.0, 4.0, 5.0])
 /// ```
 ///
@@ -244,8 +244,9 @@ pub fn tautstring<T>(input: &[T], lambda: T) -> Vec<T>
 ///
 /// ```
 /// let input = vec![1.0, 2.0, 3.0, 4.0, 5.0];
+/// let lambda = 0.0;
 ///
-/// let denoised_with_zero_lambda = condat(input, 0.0);
+/// let denoised_with_zero_lambda = condat(input, lambda);
 /// assert_eq!(denoised_with_zero_lambda, vec![1.0, 2.0, 3.0, 4.0, 5.0])
 /// ```
 ///
@@ -253,8 +254,9 @@ pub fn tautstring<T>(input: &[T], lambda: T) -> Vec<T>
 ///
 /// ```
 /// let input = vec![1.0, 2.0, 3.0, 4.0, 5.0];
+/// let lambda = 10.0;
 ///
-/// let denoised_with_larger_lambda = condat(input, 10.0);
+/// let denoised_with_larger_lambda = condat(input, lambda);
 /// assert_eq!(denoised_with_larger_lambda, vec![3.0, 3.0, 3.0, 3.0, 3.0]);
 /// ```
 ///
