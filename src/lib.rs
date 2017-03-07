@@ -78,7 +78,8 @@ pub fn tautstring<T>(input: &[T], lambda: T) -> Vec<T>
     assert!(input.len() > 0,
             "Input list should have at least one value.");
 
-    assert!(lambda >= num::zero(), "Lambda must be greater than or equal to 0.");
+    assert!(lambda >= num::zero(),
+            "Lambda must be greater than or equal to 0.");
 
     let mut output = vec![num::zero(); input.len()];
     let width = input.len() + 1;
@@ -215,7 +216,8 @@ pub fn tautstring<T>(input: &[T], lambda: T) -> Vec<T>
         }
         i += 1;
     }
-    assert!(input.len() == output.len(), "Input and output must have the same length.");
+    assert!(input.len() == output.len(),
+            "Input and output must have the same length.");
     output
 }
 
@@ -272,7 +274,8 @@ pub fn condat<T>(input: &[T], lambda: T) -> Vec<T>
     assert!(input.len() > 0,
             "Input list should have at least one value.");
 
-    assert!(lambda >= num::zero(), "Lambda must be greater than or equal to 0.");
+    assert!(lambda >= num::zero(),
+            "Lambda must be greater than or equal to 0.");
 
     let width = input.len();
     let mut output = Vec::with_capacity(width);
@@ -338,7 +341,8 @@ pub fn condat<T>(input: &[T], lambda: T) -> Vec<T>
                         .expect("Unable to convert usize to num::FromPrimitive.");
                 output.extend(iter::repeat(segment_lower_bound)
                     .take(current_input_index - segment_start + 1));
-                assert!(input.len() == output.len(), "Input and output must have the same length.");
+                assert!(input.len() == output.len(),
+                        "Input and output must have the same length.");
                 return output;
             }
         } else {
@@ -353,7 +357,7 @@ pub fn condat<T>(input: &[T], lambda: T) -> Vec<T>
                 output.extend(iter::repeat(segment_lower_bound).take(kminus - segment_start + 1));
                 segment_start = kminus + 1;
                 utils::sync_values(segment_start,
-                            &mut [&mut current_input_index, &mut kminus, &mut kplus]);
+                                   &mut [&mut current_input_index, &mut kminus, &mut kplus]);
                 segment_lower_bound = input[kplus];
                 segment_upper_bound = segment_lower_bound + twolambda;
                 umin = lambda;
@@ -367,7 +371,7 @@ pub fn condat<T>(input: &[T], lambda: T) -> Vec<T>
                 output.extend(iter::repeat(segment_upper_bound).take(kplus - segment_start + 1));
                 segment_start = kplus + 1;
                 utils::sync_values(segment_start,
-                            &mut [&mut current_input_index, &mut kminus, &mut kplus]);
+                                   &mut [&mut current_input_index, &mut kminus, &mut kplus]);
                 segment_upper_bound = input[kplus];
                 segment_lower_bound = segment_upper_bound - twolambda;
                 umin = lambda;
