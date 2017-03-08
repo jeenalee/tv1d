@@ -6,7 +6,7 @@ Total variation denoising algorithms for 1d data.
 
 ## Total Variation Denoising
 
-[Total variation denoising](https://en.wikipedia.org/wiki/Total_variation_denoising) algorithms denoise signals through reducing the total variation. As they are effective at preserving edges while removing the noise, total variation denoising algorithms are especially suitable for signals whose model are [piecewise constant function](https://en.wikipedia.org/wiki/Step_function). In short, piecewise constant 1D data would look like a mix of flat regions and jumps between them.
+[Total variation (TV) denoising](https://en.wikipedia.org/wiki/Total_variation_denoising) removes fine, potentially spurious noise from a discrete signal while preserving its sharp edges. The technique is well-suited for recovering piecewise constant signals and is often favored for denoising images over alternatives that would smooth edges.
 
 ## Install
 

@@ -12,9 +12,10 @@ use std::iter;
 use std::ops;
 
 /// Denoises the input values based on a tautstring algorithm by
-/// Davies P. and Kovac A. in 2001 in the paper ["Local extremes, runs, strings
-/// and
-/// multiresolution"](https://pure.tue.nl/ws/files/2200362/Metis214115.pdf).
+/// Davies P. and Kovac A. in 2001 in the paper ["Local extremes,
+/// runs, strings and
+/// multiresolution"](https://pure.tue.nl/ws/files/2200362/Metis214115.pdf). This
+/// algorithm scales linearly with respect to signal length.
 ///
 /// The algorithm was implemented by Condat L. in C, which was then
 /// implemented in Rust here. The algorithm can be understood as
@@ -229,14 +230,15 @@ pub fn tautstring<T>(input: &[T], lambda: T) -> Vec<T>
 
 
 /// Denoises the input values based on a non-iterative algorithm
-/// described by Condat L. in 2013 in the paper ["A Direct
-/// Algorithm for 1D Total Variation
-/// Denoising"](http://tinyurl.com/gnsh79b).
+/// described by Condat L. in 2013 in the paper ["A Direct Algorithm
+/// for 1D Total Variation
+/// Denoising"](https://hal.archives-ouvertes.fr/hal-00675043v2/document).
+/// While this algorithm scales at worst quadratically with respect to
+/// signal length, it appears faster in practical situations.
 ///
 /// A `lambda` value may provide different degrees of denoising for
 /// different inputs, except for `lambda` that is `0`.
 ///
-
 /// `lambda` closer to `0` means the denoised output will resemble the
 /// input more. As `lambda` increases, the denoised output values
 /// become closer to the average of the input values.
