@@ -50,7 +50,7 @@ Following is a visualization of `tv1d::condat` with varying `lambda` applied to 
 
 "base pair" denotes the position at the transcript. "expression value" denotes the level of expression at a given "base pair" after denoising. "lambda" is the degree of denoising applied to the signals, and `0` is the raw signals.
 
-The plots were generated with [`ggpy'](https://github.com/yhat/ggpy).
+The plots were generated with [`ggpy`](https://github.com/yhat/ggpy).
 
 ![tv1d line plot](./examples/images/tv1d_line_plot.png)
 <br>

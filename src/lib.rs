@@ -15,7 +15,7 @@ use std::ops;
 /// Davies P. and Kovac A. in 2001 in the paper ["Local extremes,
 /// runs, strings and
 /// multiresolution"](https://pure.tue.nl/ws/files/2200362/Metis214115.pdf). This
-/// algorithm scales linearly with respect to signal length.
+/// algorithm's run time scales linearly with respect to signal length.
 ///
 /// The algorithm was implemented by Condat L. in C, which was then
 /// implemented in Rust here. The algorithm can be understood as
@@ -233,8 +233,9 @@ pub fn tautstring<T>(input: &[T], lambda: T) -> Vec<T>
 /// described by Condat L. in 2013 in the paper ["A Direct Algorithm
 /// for 1D Total Variation
 /// Denoising"](https://hal.archives-ouvertes.fr/hal-00675043v2/document).
-/// While this algorithm scales at worst quadratically with respect to
-/// signal length, it appears faster in practical situations.
+/// While this algorithm's run time scales at worst quadratically with
+/// respect to signal length, it appears faster in practical
+/// situations.
 ///
 /// A `lambda` value may provide different degrees of denoising for
 /// different inputs, except for `lambda` that is `0`.
