@@ -2,14 +2,18 @@
 
 #![deny(missing_docs)]
 #![deny(missing_debug_implementations)]
+#![feature(core)]
 
+extern crate core;
 extern crate num;
+extern crate fixed_circular_buffer;
 
 mod utils;
 
 use std::cmp;
 use std::iter;
 use std::ops;
+use utils::CircularBuffer;
 
 /// Denoises the input values based on a tautstring algorithm by
 /// Davies P. and Kovac A. in 2001 in the paper ["Local extremes,
@@ -423,6 +427,61 @@ pub fn condat<T>(input: &[T], lambda: T) -> Vec<T>
         }
     }
 }
+
+/// Variables needed for Condat denoising.
+#[derive(Debug)]
+pub struct CondatVariables<T>
+    where T: num::Num + num::FromPrimitive +
+          cmp::PartialOrd + ops::Neg<Output=T> +
+          ops::AddAssign<T> + Copy +
+          std::fmt::Debug + num::Float
+{
+    umin: T,
+    umax: T,
+    segment_lower_bound: T,
+    segment_upper_bound: T,
+    current_index: T,
+    minus_index: T,
+    plus_index: T,
+    buffer: CircularBuffer<T>,
+}
+
+impl<T: Clone> Clone for CondatVariables<T>
+    where T: num::Num + num::FromPrimitive +
+        cmp::PartialOrd + ops::Neg<Output=T> +
+          ops::AddAssign<T> + Copy +
+          std::fmt::Debug + num::Float
+{
+    fn clone(&self) -> Self {
+        CondatVariables {
+            umin: self.umin.clone(),
+            umax: self.umax.clone(),
+            segment_lower_bound: self.segment_lower_bound.clone(),
+            segment_upper_bound: self.segment_upper_bound.clone(),
+            current_index: self.current_index.clone(),
+            minus_index: self.minus_index.clone(),
+            plus_index: self.plus_index.clone(),
+            buffer: self.buffer.clone(),
+        }
+    }
+}
+
+pub struct CondatIterator<I, T>
+    where I: Iterator<Item =T>,
+          T: num::Num + num::FromPrimitive +
+          cmp::PartialOrd + ops::Neg<Output=T> +
+          ops::AddAssign<T> + Copy + std::default::Default +
+          std::fmt::Debug + num::Float
+{
+    iter: iter::Peekable<I>,
+    lambda: T,
+    minlambda: T,
+    twolambda: T,
+    // state is for whether the program should read more values to
+    // denoise or write denoised values.
+    state: State<T>,
+}
+
 
 #[cfg(test)]
 mod tests {

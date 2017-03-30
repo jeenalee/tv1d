@@ -11,3 +11,4 @@ documentation = "https://docs.rs/tv1d/"
 
 [dependencies]
 num = "0.1.37"
+fixed_circular_buffer = "0.2.2"
