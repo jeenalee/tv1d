@@ -12,8 +12,10 @@ mod utils;
 
 use std::cmp;
 use std::iter;
+use std::iter::Peekable;
 use std::ops;
 use utils::CircularBuffer;
+use std::collections::VecDeque;
 
 /// Denoises the input values based on a tautstring algorithm by
 /// Davies P. and Kovac A. in 2001 in the paper ["Local extremes,
@@ -443,12 +445,13 @@ pub struct CondatVariables<T>
     current_index: T,
     minus_index: T,
     plus_index: T,
-    buffer: CircularBuffer<T>,
+    input_buffer: CircularBuffer<T>,
+    output_buffer: VecDeque<T>,
 }
 
 impl<T: Clone> Clone for CondatVariables<T>
     where T: num::Num + num::FromPrimitive +
-        cmp::PartialOrd + ops::Neg<Output=T> +
+          cmp::PartialOrd + ops::Neg<Output=T> +
           ops::AddAssign<T> + Copy +
           std::fmt::Debug + num::Float
 {
@@ -461,19 +464,131 @@ impl<T: Clone> Clone for CondatVariables<T>
             current_index: self.current_index.clone(),
             minus_index: self.minus_index.clone(),
             plus_index: self.plus_index.clone(),
-            buffer: self.buffer.clone(),
+            input_buffer: self.input_buffer.clone(),
+            output_buffer: self.output_buffer.clone(),
         }
     }
 }
 
-pub struct CondatIterator<I, T>
-    where I: Iterator<Item =T>,
+#[derive(Debug)]
+enum State<T>
+    where T: num::Num + num::FromPrimitive +
+          cmp::PartialOrd + ops::Neg<Output=T> +
+          ops::AddAssign<T> + Copy +
+          std::fmt::Debug + num::Float
+{
+    /// TODO
+    State0 {
+        variables: CondatVariables<T>,
+    },
+    /// TODO
+    State1 {
+        segment_length: usize,
+        denoised_value: T,
+        prev_signal: T,
+        variables: CondatVariables<T>,
+    },
+    /// TODO
+    State2 {
+        segment_length: usize,
+        denoised_value: T,
+        prev_signal: T,
+        variables: CondatVariables<T>,
+    },
+    /// TODO
+    State3 {
+        segment_length: usize,
+        denoised_value: T,
+    },
+    /// TODO
+    State4 {
+        segment_length: usize,
+        denoised_value: T,
+        prev_signal: T,
+        variables: CondatVariables<T>,
+    },
+    /// TODO
+    State5 {
+        segment_length: usize,
+        denoised_value: T,
+        prev_signal: T,
+        variables: CondatVariables<T>,
+    },
+    ShortInput {
+        denoised_values: VecDeque<T>,
+    },
+    Complete,
+}
+
+impl<I, T> CondatIterator<I, T>
+    where I: Iterator<Item=T>,
           T: num::Num + num::FromPrimitive +
           cmp::PartialOrd + ops::Neg<Output=T> +
           ops::AddAssign<T> + Copy + std::default::Default +
           std::fmt::Debug + num::Float
 {
-    iter: iter::Peekable<I>,
+    /// TODO
+    pub fn new(iter: I, lambda: T, window: usize) -> Option<CondatIterator<I, T>> 
+    {
+        // TODO: Can an iterator return None on the first pass??
+        let mut iter = iter.peekable();
+        let mut signals = vec![];
+
+        for _ in 0..window {
+            while let Some(signal) = iter.next() {
+                signals.push(signal);
+            }
+        }
+
+        if signals.len() == 0 {
+            return None
+        } else if signals.len() < window {
+            let mut denoised_values: VecDeque<T> = condat(&signals, lambda).into_iter().collect();
+            Some(CondatIterator {
+                iter: iter,
+                lambda: lambda,
+                twolambda: T::from_u8(2).expect("Unable to transform `2` to T.") * lambda,
+                minlambda: -lambda,
+                state: State::ShortInput {
+                    denoised_values: denoised_values,
+                },
+            })
+        } else {
+            let first_signal = signals[0];
+            let variables = CondatVariables {
+                umin: lambda,
+                umax: -lambda,
+                segment_lower_bound: first_signal - lambda,
+                segment_upper_bound: first_signal + lambda,
+                current_index: num::zero(),
+                minus_index: num::zero(),
+                plus_index: num::zero(),
+                input_buffer: CircularBuffer::from(signals),
+                output_buffer: VecDeque::new(),
+            };
+            Some(CondatIterator {
+                iter: iter,
+                lambda: lambda,
+                twolambda: T::from_u8(2).expect("Unable to transform `2` to T.") * lambda,
+                minlambda: -lambda,
+                state: State::State0 {
+                    variables: variables,
+                },
+            })
+        }
+    }
+}
+
+/// TODO
+#[derive(Debug)]
+pub struct CondatIterator<I, T>
+    where I: Iterator<Item =T>,
+          T: num::Num + num::FromPrimitive +
+          cmp::PartialOrd + ops::Neg<Output=T> +
+          ops::AddAssign<T> + Copy +
+          std::fmt::Debug + num::Float
+{
+    iter: Peekable<I>,
     lambda: T,
     minlambda: T,
     twolambda: T,
@@ -482,6 +597,29 @@ pub struct CondatIterator<I, T>
     state: State<T>,
 }
 
+impl<I, T> Iterator for CondatIterator<I, T>
+    where I: Iterator<Item = T>,
+          T: num::Num + num::FromPrimitive +
+          cmp::PartialOrd + ops::Neg<Output=T> +
+          ops::AddAssign<T> + Copy +
+          std::fmt::Debug + num::Float
+{
+    type Item = I::Item;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.lambda == num::zero() {
+            return self.iter.next()
+        }
+
+        match self.state {
+            State::Complete => return None,
+            State::ShortInput{ ref mut denoised_values } => return denoised_values.pop_front(),
+            _ => return None,
+        }
+
+        
+    }
+}
 
 #[cfg(test)]
 mod tests {
